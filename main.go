@@ -23,7 +23,6 @@ type user struct {
 var tpl *template.Template
 var dbUsers = map[string]user{}
 var dbSessions = map[string]string{}
-var currentUser string = ""
 
 func init() {
 	tpl = template.Must(template.ParseGlob("templates/*"))
@@ -121,7 +120,6 @@ func Login(w http.ResponseWriter, req *http.Request, _ httprouter.Params) {
 			// write that uuid as a cookie on their browser.
 			http.SetCookie(w, c)
 			//2) redirect them home.
-
 			http.Redirect(w, req, "/home", 302)
 		} else {
 			fmt.Println("user is: ", user)
@@ -136,7 +134,14 @@ func Login(w http.ResponseWriter, req *http.Request, _ httprouter.Params) {
 }
 
 func Home(w http.ResponseWriter, req *http.Request, _ httprouter.Params) {
-	tpl.ExecuteTemplate(w, "home.html", nil)
+	c, _ := req.Cookie("session")
+
+	un := findKeyFromValue(c.Value, dbSessions)
+	u := dbUsers[un]
+	fmt.Println("the username is: ", un)
+	fmt.Println("the user is: ", u)
+	fmt.Println(c.Value)
+	tpl.ExecuteTemplate(w, "home.html", u)
 }
 
 func Signout(w http.ResponseWriter, req *http.Request, _ httprouter.Params) {
@@ -147,4 +152,14 @@ func Signout(w http.ResponseWriter, req *http.Request, _ httprouter.Params) {
 	}
 	http.SetCookie(w, c)
 	http.Redirect(w, req, "/", 302)
+}
+
+func findKeyFromValue(val string, db map[string]string) string {
+
+	for k, v := range db {
+		if val == v {
+			return k
+		}
+	}
+	return ""
 }
