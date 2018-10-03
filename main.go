@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"time"
 
 	"golang.org/x/crypto/bcrypt"
 
@@ -22,6 +23,7 @@ type user struct {
 var tpl *template.Template
 var dbUsers = map[string]user{}
 var dbSessions = map[string]string{}
+var currentUser string = ""
 
 func init() {
 	tpl = template.Must(template.ParseGlob("templates/*"))
@@ -37,6 +39,7 @@ func main() {
 	r.GET("/login", Login)
 	r.POST("/login", Login)
 	r.GET("/home", Home)
+	r.GET("/signout", Signout)
 	log.Fatal(http.ListenAndServe(":8080", r))
 }
 
@@ -134,4 +137,14 @@ func Login(w http.ResponseWriter, req *http.Request, _ httprouter.Params) {
 
 func Home(w http.ResponseWriter, req *http.Request, _ httprouter.Params) {
 	tpl.ExecuteTemplate(w, "home.html", nil)
+}
+
+func Signout(w http.ResponseWriter, req *http.Request, _ httprouter.Params) {
+	c := &http.Cookie{
+		Name:    "session",
+		Value:   "",
+		Expires: time.Unix(0, 0),
+	}
+	http.SetCookie(w, c)
+	http.Redirect(w, req, "/", 302)
 }
